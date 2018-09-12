@@ -251,8 +251,8 @@ case "$STATUS" in
     ;;
 
     *)        
-	    RESULT="ERROR - Something is not working as expected =( - size: $DIR_PATH $DIR_SIZE_H $UNIT; $PARTITION $PART_SIZE_H $UNIT ($USAGE_PERC%)"
-	    RETURN=$STATUS_UNKNOWN
+		RESULT="ERROR - Something is not working as expected =( - size: $DIR_PATH $DIR_SIZE_H $UNIT; $PARTITION $PART_SIZE_H $UNIT ($USAGE_PERC%)"
+		RETURN=$STATUS_UNKNOWN
     ;;
 esac
 
