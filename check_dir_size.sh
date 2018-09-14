@@ -9,7 +9,7 @@
 #               return an OK and directory size. The thresholds are compared considering 
 #               the unit provided, if none default is KiB.
 #
-#               Pay attention if this commands need sudo in your server. 
+#               Pay attention if these commands need sudo in your server. 
 # ======================================================================================
 
 
