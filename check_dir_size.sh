@@ -49,211 +49,212 @@ EOF
 }
 
 err(){
-    echo "We have a problem: $1"
-    exit 3
+	echo "We have a problem: $1"
+	exit 3
 }
 
 getDirectorySize() {
-    local _size=$( du -s $1 | awk '{print ($1)}' )
-    echo $_size
+	#local _size=$( sudo du -s $1 | awk '{print ($1)}' ) -> try this if running user can't read value
+	local _size=$( du -s $1 | awk '{print ($1)}' )
+	echo $_size
 }
 
 getPartition() {
-    local _part=$( df -P "$1" | awk '/^\/dev/ {print $1}' )
-    echo $_part
+	local _part=$( df -P "$1" | awk '/^\/dev/ {print $1}' )
+	echo $_part
 }
 
 getPartitionSize() {
-    local _size=$( fdisk -s $1 )
-    echo $_size
+	local _size=$( fdisk -s $1 )
+	echo $_size
 }
 
 getUsagePercentual() {
-    local _percent=$( awk "BEGIN { p=100*$1/$2; printf \"%.1f\n\", p }" )
-    echo $_percent
+	local _percent=$( awk "BEGIN { p=100*$1/$2; printf \"%.1f\n\", p }" )
+	echo $_percent
 }
 
 isGreater() {
-    local _value=$( awk "BEGIN{ print ($1 >= $2) }" )
-    echo $_value
+	local _value=$( awk "BEGIN{ print ($1 >= $2) }" )
+	echo $_value
 }
 
 # ----------------------------------------------------------------------- Verify Options
 while getopts ":d:w:c:W:C:u:h" opt; do
-    case "$opt" in
-        d) 
-	        if [ "$( echo $OPTARG | cut -c1)" != "-" ]; then
-	            DIR_PATH=$OPTARG
+	case "$opt" in
+		d) 
+			if [ "$( echo $OPTARG | cut -c1)" != "-" ]; then
+				DIR_PATH=$OPTARG
 
-	            if [ ! -d $DIR_PATH ]; then
-	                echo "It's not a directory: $DIR_PATH"
-	                exit 3
-	            fi
+				if [ ! -d $DIR_PATH ]; then
+					echo "It's not a directory: $DIR_PATH"
+					exit 3
+				fi
 
-	            DIR_SIZE=$( getDirectorySize $DIR_PATH )
-	            PARTITION=$( getPartition $DIR_PATH )
-	            PART_SIZE=$( getPartitionSize $PARTITION )
-	            USAGE_PERC=$( getUsagePercentual $DIR_SIZE $PART_SIZE )
-	        else
-		        err "received $OPTARG as path"
-	        fi
-	    ;;
+				DIR_SIZE=$( getDirectorySize $DIR_PATH )
+				PARTITION=$( getPartition $DIR_PATH )
+				PART_SIZE=$( getPartitionSize $PARTITION )
+				USAGE_PERC=$( getUsagePercentual $DIR_SIZE $PART_SIZE )
+			else
+				err "received $OPTARG as path"
+			fi
+		;;
 	
-        w)
-	        if [ "$( echo $OPTARG | cut -c1)" != "-" ]; then	
-	            WARNING_THRESHOLD=$OPTARG
-	        else
-		        err "received $OPTARG as size warning"
-	        fi
-	    ;;
+		w)
+			if [ "$( echo $OPTARG | cut -c1)" != "-" ]; then	
+				WARNING_THRESHOLD=$OPTARG
+			else
+				err "received $OPTARG as size warning"
+			fi
+		;;
 	
-        c) 
-	        if [ "$( echo $OPTARG | cut -c1)" != "-" ]; then
-	            CRITICAL_THRESHOLD=$OPTARG
-	        else
-		        err "received $OPTARG as size critical"
-	        fi
-	    ;;
+		c) 
+			if [ "$( echo $OPTARG | cut -c1)" != "-" ]; then
+				CRITICAL_THRESHOLD=$OPTARG
+			else
+				err "received $OPTARG as size critical"
+			fi
+		;;
 
-	    W)
-	        if [ "$( echo $OPTARG | cut -c1)" != "-" ]; then
-    	        WARNING_PERC_THRESHOLD=$OPTARG
-	        else
-		        err "received $OPTARG as percentual warning"
-            fi
-	    ;;
+		W)
+			if [ "$( echo $OPTARG | cut -c1)" != "-" ]; then
+				WARNING_PERC_THRESHOLD=$OPTARG
+			else
+				err "received $OPTARG as percentual warning"
+			fi
+		;;
 
-	    C)
-	        if [ "$( echo $OPTARG | cut -c1)" != "-" ]; then
-    	        CRITICAL_PERC_THRESHOLD=$OPTARG
-	        else
-		        err "received $OPTARG as percentual critical"
-            fi
-	    ;;
+		C)
+			if [ "$( echo $OPTARG | cut -c1)" != "-" ]; then
+				CRITICAL_PERC_THRESHOLD=$OPTARG
+			else
+				err "received $OPTARG as percentual critical"
+			fi
+		;;
 
-        u)
-	        if [ "$( echo $OPTARG | cut -c1)" != "-" ]; then
-	            SIZE_UNIT=$OPTARG
-	        else 
-	            err "received $OPTARG as size unit"
-	        fi
-	    ;;
+		u)
+			if [ "$( echo $OPTARG | cut -c1)" != "-" ]; then
+				SIZE_UNIT=$OPTARG
+			else 
+				err "received $OPTARG as size unit"
+			fi
+		;;
 
-	    h)
-	        printUsage
-	    ;;
+		h)
+			printUsage
+		;;
 	
-        *) 
-	        err "Invalid arguments -> $OPTARG"	
-	    ;;
-    esac
+		*) 
+			err "Invalid arguments -> $OPTARG"	
+		;;
+	esac
 done
 
 if [ $OPTIND -eq 1 ]; then
-    err "No arguments was passed to me..."
+	err "No arguments was passed to me..."
 fi
 
 
 # ---------------------------------------------------------------------- Unit Convertion
 case "$SIZE_UNIT" in
-    G|g)
-        UNIT="GB"
-        DIR_SIZE_H=$( awk "BEGIN { b=$DIR_SIZE/1024/1024; printf \"%.2f\n\", b }" )
-        PART_SIZE_H=$( awk "BEGIN { b=$PART_SIZE/1024/1024; printf \"%.2f\n\", b }" )
-    ;;
+	G|g)
+		UNIT="GB"
+		DIR_SIZE_H=$( awk "BEGIN { b=$DIR_SIZE/1024/1024; printf \"%.2f\n\", b }" )
+		PART_SIZE_H=$( awk "BEGIN { b=$PART_SIZE/1024/1024; printf \"%.2f\n\", b }" )
+	;;
 	
-    M|m)
-	    UNIT="MB"
-	    DIR_SIZE_H=$( awk "BEGIN { b=$DIR_SIZE/1024; printf \"%.2f\n\", b }" )
-	    PART_SIZE_H=$( awk "BEGIN { b=$PART_SIZE/1024; printf \"%.2f\n\", b }" )
-    ;;
+	M|m)
+		UNIT="MB"
+		DIR_SIZE_H=$( awk "BEGIN { b=$DIR_SIZE/1024; printf \"%.2f\n\", b }" )
+		PART_SIZE_H=$( awk "BEGIN { b=$PART_SIZE/1024; printf \"%.2f\n\", b }" )
+	;;
 
-    K|k|*) 
-	    UNIT="KB"
-	    DIR_SIZE_H="$DIR_SIZE"
-	    PART_SIZE_H="$PART_SIZE"
-    ;;
+	K|k|*) 
+		UNIT="KB"
+		DIR_SIZE_H="$DIR_SIZE"
+		PART_SIZE_H="$PART_SIZE"
+	;;
 esac
 
 # --------------------------------------------------------------- Verify Size Thresholds
 if [ -z "$CRITICAL_THRESHOLD" ] || [ -z "$WARNING_THRESHOLD" ]; then
-    STATUS="OK-NOTHRESHOLD"
-    break
+	STATUS="OK-NOTHRESHOLD"
+	break
 elif [ $( isGreater $DIR_SIZE_H $CRITICAL_THRESHOLD ) -eq 1 ]; then
-    STATUS="CRITICAL"
-    break
+	STATUS="CRITICAL"
+	break
 elif [ $( isGreater $DIR_SIZE_H $WARNING_THRESHOLD ) -eq 1 ]; then
-    STATUS="WARNING"
-    break
+	STATUS="WARNING"
+	break
 elif [ $( isGreater $DIR_SIZE_H 0 ) -eq 1 ]; then
-    STATUS="OK"
-    break
+	STATUS="OK"
+	break
 else
-    STATUS="UNKNOWN"
+	STATUS="UNKNOWN"
 fi
 
 # --------------------------------------------------------- Verify Percentual Thresholds
 if [ -n "$CRITICAL_PERC_THRESHOLD" ] || [ -n "$WARNING_PERC_THRESHOLD" ]; then
-    if [ $( isGreater $USAGE_PERC $CRITICAL_PERC_THRESHOLD ) -eq 1 ]; then
-        STATUS="CRITICAL%"
-        break
-    elif [ $( isGreater $USAGE_PERC $WARNING_PERC_THRESHOLD ) -eq 1 ]; then
-        STATUS="WARNING%"
-        break
-    elif [ $( isGreater $USAGE_PERC 0 ) -eq 1 ]; then
-        STATUS="OK%"
-        break
-    else
-        STATUS="UNKNOWN%"
-    fi
+	if [ $( isGreater $USAGE_PERC $CRITICAL_PERC_THRESHOLD ) -eq 1 ]; then
+		STATUS="CRITICAL%"
+		break
+	elif [ $( isGreater $USAGE_PERC $WARNING_PERC_THRESHOLD ) -eq 1 ]; then
+		STATUS="WARNING%"
+		break
+	elif [ $( isGreater $USAGE_PERC 0 ) -eq 1 ]; then
+		STATUS="OK%"
+		break
+	else
+		STATUS="UNKNOWN%"
+	fi
 fi
 
 # ---------------------------------------------------------------- Create Plugin Returns
 case "$STATUS" in
-    OK)
-        RESULT="SIZE OK - Size: $DIR_PATH $DIR_SIZE_H $UNIT; $PARTITION $PART_SIZE_H $UNIT ($USAGE_PERC%)"
-	    RETURN=$STATUS_OK
-    ;;
+	OK)
+		RESULT="SIZE OK - Size: $DIR_PATH $DIR_SIZE_H $UNIT; $PARTITION $PART_SIZE_H $UNIT ($USAGE_PERC%)"
+		RETURN=$STATUS_OK
+	;;
 
-    OK%)
-        RESULT="USAGE OK - $USAGE_PERC% of $PARTITION; Size: $DIR_PATH $DIR_SIZE_H $UNIT; $PARTITION $PART_SIZE_H $UNIT"
-        RETURN=$STATUS_OK
-    ;;
+	OK%)
+		RESULT="USAGE OK - $USAGE_PERC% of $PARTITION; Size: $DIR_PATH $DIR_SIZE_H $UNIT; $PARTITION $PART_SIZE_H $UNIT"
+		RETURN=$STATUS_OK
+	;;
 
-    OK-NOTHRESHOLD)
-	    RESULT="OK - size: $DIR_PATH $DIR_SIZE_H $UNIT; $PARTITION $PART_SIZE_H $UNIT ($USAGE_PERC%)"
-	    RETURN=$STATUS_OK
-    ;;
+	OK-NOTHRESHOLD)
+		RESULT="OK - size: $DIR_PATH $DIR_SIZE_H $UNIT; $PARTITION $PART_SIZE_H $UNIT ($USAGE_PERC%)"
+		RETURN=$STATUS_OK
+	;;
 
-    WARNING)
-	    RESULT="SIZE WARNING - size: $DIR_PATH $DIR_SIZE_H $UNIT; $PARTITION $PART_SIZE_H $UNIT ($USAGE_PERC%)"
-	    RETURN=$STATUS_WARNING
-    ;;
+	WARNING)
+		RESULT="SIZE WARNING - size: $DIR_PATH $DIR_SIZE_H $UNIT; $PARTITION $PART_SIZE_H $UNIT ($USAGE_PERC%)"
+		RETURN=$STATUS_WARNING
+	;;
 
-    WARNING%)
-        RESULT="USAGE WARNING - $USAGE_PERC% of $PARTITION; Size: $DIR_PATH $DIR_SIZE_H $UNIT; $PARTITION $PART_SIZE_H $UNIT"
-        RETURN=$STATUS_WARNING
-    ;;
+	WARNING%)
+		RESULT="USAGE WARNING - $USAGE_PERC% of $PARTITION; Size: $DIR_PATH $DIR_SIZE_H $UNIT; $PARTITION $PART_SIZE_H $UNIT"
+		RETURN=$STATUS_WARNING
+	;;
 
-    CRITICAL)
-	    RESULT="SIZE CRITICAL - size: $DIR_PATH $DIR_SIZE_H $UNIT; $PARTITION $PART_SIZE_H $UNIT ($USAGE_PERC%)"
-	    RETURN=$STATUS_CRITICAL
-    ;;
+	CRITICAL)
+		RESULT="SIZE CRITICAL - size: $DIR_PATH $DIR_SIZE_H $UNIT; $PARTITION $PART_SIZE_H $UNIT ($USAGE_PERC%)"
+		RETURN=$STATUS_CRITICAL
+	;;
 
-    CRITICAL%)
-        RESULT="USAGE CRITICAL  - $USAGE_PERC% of $PARTITION; Size: $DIR_PATH $DIR_SIZE_H $UNIT; $PARTITION $PART_SIZE_H $UNIT"
-        RETURN=$STATUS_CRITICAL
-    ;;
+	CRITICAL%)
+		RESULT="USAGE CRITICAL  - $USAGE_PERC% of $PARTITION; Size: $DIR_PATH $DIR_SIZE_H $UNIT; $PARTITION $PART_SIZE_H $UNIT"
+		RETURN=$STATUS_CRITICAL
+	;;
 
-    UNKNOWN)
-	    RESULT="UNKNOWN - size: $DIR_PATH $DIR_SIZE_H $UNIT; $PARTITION $PART_SIZE_H $UNIT ($USAGE_PERC%)"
-	    RETURN=$STATUS_UNKNOWN
-    ;;
+	UNKNOWN)
+		RESULT="UNKNOWN - size: $DIR_PATH $DIR_SIZE_H $UNIT; $PARTITION $PART_SIZE_H $UNIT ($USAGE_PERC%)"
+		RETURN=$STATUS_UNKNOWN
+	;;
 
-    *)        
+	*)        
 		RESULT="ERROR - Something is not working as expected =( - size: $DIR_PATH $DIR_SIZE_H $UNIT; $PARTITION $PART_SIZE_H $UNIT ($USAGE_PERC%)"
 		RETURN=$STATUS_UNKNOWN
-    ;;
+	;;
 esac
 
 PERF=" |directory_size=$DIR_SIZE_H$UNIT;$WARNING_THRESHOLD;$CRITICAL_THRESHOLD;0 directory_usage=$USAGE_PERC%;$WARNING_PERC_THRESHOLD;$CRITICAL_PERC_THRESHOLD;0"
