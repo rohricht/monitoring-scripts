@@ -4,7 +4,7 @@
 # Email:        rohricht@gmail.com
 # Date:         2018-09-04
 # Usage:        check_dir_size.sh -d /path/to/directory [parameters] 
-# Description:  This script get the size of a directory and test it against size and 
+# Description:  This script gets the size of a directory and test it against size and 
 #               percentual usage of disk thresholds. If no thresholds, then simply 
 #               return an OK and directory size. The thresholds are compared considering 
 #               the unit provided, if none default is KiB.
