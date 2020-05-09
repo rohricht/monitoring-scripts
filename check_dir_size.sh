@@ -151,7 +151,7 @@ while getopts ":d:w:c:W:C:u:h" opt; do
 done
 
 if [ $OPTIND -eq 1 ]; then
-	err "No arguments was passed to me..."
+	err "No arguments were passed to me..."
 fi
 
 
