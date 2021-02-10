@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+# =================================================================================================
+#                                      CHECK MOUNT RULES
+#
+# Check if the required mounts are active in the server and try to mount and communicate 
+# when necessary
+#
+# Create by Nilton Röhricht Junior on April 1st, 2020
+# =================================================================================================
+
+SERVER=$( hostname )
+MAIL_DESTINATION="your.mail@domain.com"
+
+# ---------------------------------------------------------- SET EXECUTION MODE
+# none: print result in the standard output (terminal)
+# error: just check, if got error send alert message
+# report: check and send report message
+#
+[[ $1 == "" ]] && MODE_TERMINAL=true
+[[ $1 == "error" ]] && MODE_ERROR=true
+[[ $1 == "report" ]] && MODE_REPORT=true
+
+# ------------------------------------------------------ READ CONFIGURED MOUNTS
+# Read the fstab file searching for "CHKMNT" commented mounts in the pattern 
+# "IPADDRESS:/opt/path/from /opt/path/to". You need to add the "CHKMNT" comment
+# before the mount rule to sign it as monitorable, avoiding anything else
+#
+CFG_MOUNTS=$( grep -A1 -E "^#.*CHKMNT" /etc/fstab )
+CFG_MOUNTS_LINES=$( echo "$CFG_MOUNTS" | grep -n "^#" | cut -d':' -f1 )
+
+# ---------------------------------------------------------- READ ACTIVE MOUNTS
+# Read the mtab file and cache all active mounts
+#
+ACT_MOUNTS=$( cat /etc/mtab )
+
+# --------------------------------------------------------- CHECK ACTIVE MOUNTS
+# Check if configured mount is an active mount
+#
+checkMounts() {
+    for mount in $( echo "$CFG_MOUNTS_LINES" )
+    do
+        let "line++"
+        cfg=$( echo "$CFG_MOUNTS" | sed "$mount!d" | cut -d' ' -f1 )
+        IS_MOUNTED=$( echo "$ACT_MOUNTS" | grep -E "^$cfg" )
+        if [[ -n $IS_MOUNTED ]]; then
+            [[ $MODE_TERMINAL ]] && printf "\e[33m$cfg\e[0m is \e[92mMOUNTED\e[0m\n"
+	        newStatusSuccess $cfg "MOUNTED"
+        else
+	        [[ $MODE_TERMINAL ]] && printf "\e[33m$cfg\e[0m is \e[91mNOT MOUNTED\e[0m\n"
+	        ERROR_STATUS=true
+	        newStatusError $cfg "NOT MOUNTED"
+        fi
+    done
+}
+
+# ------------------------------------------------------- REPORT: Success Entry
+# Add a success entry in the HTML Report
+# $1: The checked object
+# $2: The description you want to show
+#
+newStatusSuccess() {
+    status="<tr style='background-color: #bcf0c8;'><td style='padding: .75rem'>$1</td><td style='padding: .75rem'>$2</td></tr>"
+    MOUNT_STATUS="$MOUNT_STATUS$status"
+}
+
+# --------------------------------------------------------- REPORT: Error Entry
+# Add an error entry in the HTML Report
+# $1: The checked object
+# $2: The description you want to show
+#
+newStatusError() {
+    status="<tr style='background-color: #e7babf;'><td style='padding: .75rem'>$1</td><td style='padding: .75rem'>$2</td></tr>"
+    MOUNT_STATUS="$MOUNT_STATUS$status"
+}
+
+# ------------------------------------------------------------- Mail the Report
+# Add an error entry in the HTML Report
+#
+sendMail() {
+    # If checking for errors ..................................................
+    if [[ $MODE_ERROR ]]; then
+        SUBJECT="MOUNT ERROR | $SERVER"
+	    TITLE="<h5 style='color: #dc3545;font-size: 1.25rem;margin-bottom: .75rem;'>Mount Status Report for <span style='font-weight: bolder;'>$SERVER</span></h5>"
+	    DESCRIPTION="A mounting error was identified in the server $SERVER. <span style='color: #dc3545;font-weight: bolder;'>Immediate intervation is required!</span>"
+    fi
+    # If creating full report .................................................
+    if [[ $MODE_REPORT ]]; then
+	    SUBJECT="MOUNT REPORT | $SERVER"
+	    TITLE="<h5 style='color: #17a2b8;font-size: 1.25rem;margin-bottom: .75rem;'>Daily Mount Status Report for <strong>$SERVER</strong></h5>"
+        DESCRIPTION="This is a daily report showing the configured mounts and status in the server $SERVER."
+    fi
+
+    MESSAGE="
+    <html>
+    <body>
+    <div>
+        <div style='flex: 1 1 auto;min-height: 1px;padding: 1.25rem;'>
+            $TITLE
+            <p style='font-size: 1rem;font-weight: 400;line-height: 1.5;color: #212529;text-align: left;'>$DESCRIPTION</p>
+        </div>
+    </div>
+    </b>
+    <table style='border-collapse: collapse;width: 100%;margin-bottom: 1rem;'>
+        <thead>
+            <tr style='background-color: #343a40; color: white;text-align: left'>
+                <th style='padding: .75rem'>Mount Path</th>
+                <th style='padding: .75rem'>Status</th>
+            </tr>
+        </thead>
+        <tbody>$MOUNT_STATUS</tbody>
+    </table></body></html> "
+
+    echo $MESSAGE | mail -s "$( echo -e "$SUBJECT\nContent-Type: text/html" )" $MAIL_DESTINATION
+    exit 0
+}
+
+# ----------------------------------------------- Run check and generate report
+checkMounts
+
+[[ $MODE_TERMINAL ]] && exit 0
+
+if [[ $MODE_ERROR ]]; then
+    [[ $ERROR_STATUS ]] && sendMail
+fi
+
+[[ $MODE_REPORT ]] && sendMail
+# ------------------------------------------------------------------------- END
