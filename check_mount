@@ -44,16 +44,16 @@ checkMounts() {
         IS_MOUNTED=$( echo "$ACT_MOUNTS" | grep -E "^$cfg" )
         if [[ -n $IS_MOUNTED ]]; then
             [[ $MODE_TERMINAL ]] && printf "\e[33m$cfg\e[0m is \e[92mMOUNTED\e[0m\n"
-	        newStatusSuccess $cfg "MOUNTED"
+	    newStatusSuccess $cfg "MOUNTED"
         else
-	        [[ $MODE_TERMINAL ]] && printf "\e[33m$cfg\e[0m is \e[91mNOT MOUNTED\e[0m\n"
-	        ERROR_STATUS=true
-	        newStatusError $cfg "NOT MOUNTED"
+	    [[ $MODE_TERMINAL ]] && printf "\e[33m$cfg\e[0m is \e[91mNOT MOUNTED\e[0m\n"
+	    ERROR_STATUS=true
+	    newStatusError $cfg "NOT MOUNTED"
         fi
     done
 }
 
-# ------------------------------------------------------- REPORT: Success Entry
+# ------------------------------------------------------- REPORT: SUCCESS ENTRY
 # Add a success entry in the HTML Report
 # $1: The checked object
 # $2: The description you want to show
@@ -63,7 +63,7 @@ newStatusSuccess() {
     MOUNT_STATUS="$MOUNT_STATUS$status"
 }
 
-# --------------------------------------------------------- REPORT: Error Entry
+# --------------------------------------------------------- REPORT: ERROR ENTRY
 # Add an error entry in the HTML Report
 # $1: The checked object
 # $2: The description you want to show
@@ -73,20 +73,20 @@ newStatusError() {
     MOUNT_STATUS="$MOUNT_STATUS$status"
 }
 
-# ------------------------------------------------------------- Mail the Report
+# ------------------------------------------------------------- MAIL THE REPORT
 # Add an error entry in the HTML Report
 #
 sendMail() {
     # If checking for errors ..................................................
     if [[ $MODE_ERROR ]]; then
         SUBJECT="MOUNT ERROR | $SERVER"
-	    TITLE="<h5 style='color: #dc3545;font-size: 1.25rem;margin-bottom: .75rem;'>Mount Status Report for <span style='font-weight: bolder;'>$SERVER</span></h5>"
-	    DESCRIPTION="A mounting error was identified in the server $SERVER. <span style='color: #dc3545;font-weight: bolder;'>Immediate intervation is required!</span>"
+	TITLE="<h5 style='color: #dc3545;font-size: 1.25rem;margin-bottom: .75rem;'>Mount Status Report for <span style='font-weight: bolder;'>$SERVER</span></h5>"
+	DESCRIPTION="A mounting error was identified in the server $SERVER. <span style='color: #dc3545;font-weight: bolder;'>Immediate intervation is required!</span>"
     fi
     # If creating full report .................................................
     if [[ $MODE_REPORT ]]; then
-	    SUBJECT="MOUNT REPORT | $SERVER"
-	    TITLE="<h5 style='color: #17a2b8;font-size: 1.25rem;margin-bottom: .75rem;'>Daily Mount Status Report for <strong>$SERVER</strong></h5>"
+	SUBJECT="MOUNT REPORT | $SERVER"
+	TITLE="<h5 style='color: #17a2b8;font-size: 1.25rem;margin-bottom: .75rem;'>Daily Mount Status Report for <strong>$SERVER</strong></h5>"
         DESCRIPTION="This is a daily report showing the configured mounts and status in the server $SERVER."
     fi
 
@@ -114,7 +114,7 @@ sendMail() {
     exit 0
 }
 
-# ----------------------------------------------- Run check and generate report
+# ----------------------------------------------- RUN CHECK AND GENERATE REPORT
 checkMounts
 
 [[ $MODE_TERMINAL ]] && exit 0
